@@ -51,39 +51,8 @@ runs:
 
         echo "::set-output name=namespace::$NAMESPACE"
 
-    # Deploy
-    - name: Deploy ${{ inputs.clusterId }}
-      shell: bash
-      run: |
-        echo "*** Deploy ${{ inputs.clusterId }} ***"
-
-        if [[ -f .env ]]; then
-          echo "++ Loading config from .env file"
-          source .env
-        fi
-
-        cd ${{ inputs.workspace }}
-        $GITHUB_ACTION_PATH/scripts/apply.sh
-
-    # Test deploy
-    - name: Validate deploy ${{ inputs.clusterId }}
-      shell: bash
-      run: |
-        echo "*** Validate deploy ${{ inputs.clusterId }} ***"
-
-        if [[ -f .env ]]; then
-          echo "++ Loading config from .env file"
-          source .env
-        fi
-
-        ROOT_DIR="$PWD"
-
-        cd ${{ inputs.workspace }}
-        $GITHUB_ACTION_PATH/scripts/validate-deploy.sh ${{ inputs.clusterId }} ${{ steps.setup-terraform.outputs.namespace }} "${CONSOLE_LINK_NAME}" "$ROOT_DIR/${{ inputs.validateDeployScript }}"
-
     # Destroy
     - name: Destroy ${{ inputs.clusterId }}
-      if: ${{ always() }}
       shell: bash
       run: |
         echo "*** Destroy ${{ inputs.clusterId }} ***"
