@@ -1,8 +1,15 @@
-# GitHub Action: Verify terraform module
+# GitHub Action: Verify terraform destroy module
 
 This action verifies Terraform modules
 
-This action prints "Hello World" or "Hello" + the name of a person to greet to the log.
+This action will attempt to remove an already applied terraform state. The action performs filtering of the resources in the state to prevent deletion of resources, if they exist. The filtered resources are:
+
+* `module.dev_cluster`
+* `module.dev_software_olm` 
+* `module.dev_tools_namespace`
+
+The action will also remove any contents of `.tmp` from the workspace directory, so any resources (e.g. files) that will be needed during terraform destroy should not be placed in that directory.
+
 
 ## Inputs
 
@@ -52,10 +59,9 @@ not check for the existence of a ConsoleLink
 ## Example usage
 
 ```yaml
-uses: ibm-garage-cloud/action-module-verify@main
+uses: cloud-native-toolkit/action-module-verify-destroy@main
 with:
   clusterId: ${{ matrix.platform }}
-  validateDeployScript: .github/scripts/validate-deploy.sh
 env:
   TF_VAR_ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
   IBMCLOUD_API_KEY: ${{ secrets.IBMCLOUD_API_KEY }}
