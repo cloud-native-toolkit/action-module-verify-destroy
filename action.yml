@@ -1,7 +1,7 @@
 name: Verify terraform module
 description: "GitHub Action to run through the lifecycle for a terraform module: deploy, verify deploy, destroy, and verify destroy"
 inputs:
-  clusterId:
+  testcase:
     description: The identifier of the cluster onto which the module should be deployed
     required: true
   validateDeployScript:
@@ -21,30 +21,27 @@ inputs:
     default: /tmp/workspace
     required: false
   configBaseUrl:
-    description: The base url where the terraform.tfvars file can be found for the clusterId. Expected to resolve to {configBaseUrl}/{clusterId}/terraform.tfvars
+    description: The base url where the terraform.tfvars file can be found for the testcase. Expected to resolve to {configBaseUrl}/{testcase}/terraform.tfvars
     default: "https://raw.githubusercontent.com/ibm-garage-cloud/action-module-verify/main/env"
     required: false
 runs:
   using: "composite"
   steps:
-    - name: Setup ${{ inputs.clusterId }} terraform.tfvars
+    - name: Setup ${{ inputs.testcase }} terraform.tfvars
       id: setup-terraform
       shell: bash
       run: |
-      run: |
-        echo "*** Setup ${{ inputs.clusterId }} terraform.tfvars ***"
+        echo "*** Setup ${{ inputs.testcase }} terraform.tfvars ***"
 
         path=$(echo "${{ inputs.testModuleDir }}" | sed -E "s~[^/]+~..~g")
         cd "${{ inputs.testStagesDir }}"
         
-        ln -s "${path}" ./module
-
         NAMESPACE=$(echo "${GITHUB_REPOSITORY}" | sed -E "s~.*/~~g" | sed -E "s/terraform-//g")
 
-        echo "++ Retrieving terraform.tfvars from ${{ inputs.configBaseUrl }}/${{ inputs.clusterId }}/terraform.tfvars"
+        echo "++ Retrieving terraform.tfvars from ${{ inputs.configBaseUrl }}/${{ inputs.testcase }}/terraform.tfvars"
 
-        if curl -sL ${{ inputs.configBaseUrl }}/${{ inputs.clusterId }}/terraform.tfvars 1> /dev/null; then
-          curl -Lo terraform.tfvars ${{ inputs.configBaseUrl }}/${{ inputs.clusterId }}/terraform.tfvars
+        if curl -sL ${{ inputs.configBaseUrl }}/${{ inputs.testcase }}/terraform.tfvars 1> /dev/null; then
+          curl -Lo terraform.tfvars ${{ inputs.configBaseUrl }}/${{ inputs.testcase }}/terraform.tfvars
         
           TFVARS_CONTENT=$(cat terraform.tfvars)
           if [[ "${TFVARS_CONTENT}" == "404: Not Found" ]]; then
@@ -63,10 +60,10 @@ runs:
         echo "::set-output name=namespace::$NAMESPACE"
 
     # Destroy
-    - name: Destroy ${{ inputs.clusterId }}
+    - name: Destroy ${{ inputs.testcase }}
       shell: bash
       run: |
-        echo "*** Destroy ${{ inputs.clusterId }} ***"
+        echo "*** Destroy ${{ inputs.testcase }} ***"
 
         if [[ -f .env ]]; then
           echo "++ Loading config from .env file"
@@ -80,10 +77,10 @@ runs:
         $GITHUB_ACTION_PATH/scripts/destroy.sh
 
     # Test destroy
-    - name: Validate destroy ${{ inputs.clusterId }}
+    - name: Validate destroy ${{ inputs.testcase }}
       shell: bash
       run: |
-        echo "*** Validate destroy ${{ inputs.clusterId }} ***"
+        echo "*** Validate destroy ${{ inputs.testcase }} ***"
 
         if [[ -f .env ]]; then
           echo "++ Loading config from .env file"
@@ -94,7 +91,7 @@ runs:
 
         if [[ -d $PWD/cluster-state/before ]]; then
           echo "  --- Comparing custer state before and after apply/destroy"
-          $GITHUB_ACTION_PATH/scripts/capture-cluster-state.sh ${{ inputs.clusterId }} $PWD/cluster-state/before $PWD/cluster-state/after
+          $GITHUB_ACTION_PATH/scripts/capture-cluster-state.sh ${{ inputs.testcase }} $PWD/cluster-state/before $PWD/cluster-state/after
           if diff -q $PWD/cluster-state/before $PWD/cluster-state/after 1> /dev/null; then
             echo "++ Destroy completed successfully"
           else
