@@ -7,4 +7,4 @@ if [[ "$REPO_NAME" == *"gitops"* ]]; then
 fi
 
 echo "Destroying resources"
-terraform apply -parallelism=$PARALELLISM -destroy
+terraform apply -parallelism=$PARALELLISM -destroy -auto-approve
